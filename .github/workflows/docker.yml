@@ -84,7 +84,7 @@ jobs:
           context: .
           file: ${{ env.DOCKERFILE }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
-          push: ${{ (github.event_name != 'pull_request' && github.actor != 'dependabot[bot]) || startsWith(github.ref, 'refs/tags/') }}
+          push: ${{ (github.event_name != 'pull_request' && github.actor != 'dependabot[bot]') || startsWith(github.ref, 'refs/tags/') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -96,7 +96,7 @@ jobs:
           context: .
           file: ${{ env.DOCKERFILE_ALPINE }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
-          push: ${{ (github.event_name != 'pull_request' && github.actor != 'dependabot[bot]) || startsWith(github.ref, 'refs/tags/') }}
+          push: ${{ (github.event_name != 'pull_request' && github.actor != 'dependabot[bot]') || startsWith(github.ref, 'refs/tags/') }}
           tags: ${{ steps.meta-alpine.outputs.tags }}
           labels: ${{ steps.meta-alpine.outputs.labels }}
           build-args: |
