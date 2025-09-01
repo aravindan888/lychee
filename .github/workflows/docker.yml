@@ -5,7 +5,7 @@ on:
     branches:
       - master
     tags:
-      - 'lychee-v*'
+      - 'v*'          # matches v0.20.1, v1.0.0 etc
   pull_request:
     branches:
       - master
@@ -26,45 +26,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      # Debian image tags
       - name: Docker meta (debian)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ${{ env.IMAGE_NAME }}
-          # generate Docker tags based on the following events/attributes
+          images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=schedule
+            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern={{version}},value=${{ github.ref_name }},prefix=lychee-
-            type=semver,pattern={{major}}.{{minor}},value=${{ github.ref_name }},prefix=lychee-
-            type=semver,pattern={{major}},value=${{ github.ref_name }},prefix=lychee-
             type=sha
-            # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
 
+      # Alpine image tags
       - name: Docker meta (alpine)
         id: meta-alpine
         uses: docker/metadata-action@v5
         with:
-          # A global suffix for each generated tag
           flavor: |
             suffix=-alpine
-          # list of Docker images to use as base name for tags
-          images: |
-            ${{ env.IMAGE_NAME }}
-          # generate Docker tags based on the following events/attributes
+          images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=schedule
+            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=ref,event=branch
             type=ref,event=pr
-            type=semver,pattern={{version}},value=${{ github.ref_name }},prefix=lychee-
-            type=semver,pattern={{major}}.{{minor}},value=${{ github.ref_name }},prefix=lychee-
-            type=semver,pattern={{major}},value=${{ github.ref_name }},prefix=lychee-
             type=sha
-            # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
 
       # Debug step to see generated tags
@@ -91,13 +84,11 @@ jobs:
           context: .
           file: ${{ env.DOCKERFILE }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
-          push: ${{ (github.event_name != 'pull_request' &&
-                     github.actor != 'dependabot[bot]') ||
-                     startsWith(github.ref, 'lychee-v') }}
+          push: ${{ (github.event_name != 'pull_request' && github.actor != 'dependabot[bot]) || startsWith(github.ref, 'refs/tags/') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            "LYCHEE_VERSION=${{ github.ref == 'refs/heads/master' && 'nightly' || 'latest' }}"
+            LYCHEE_VERSION=${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || (github.ref == 'refs/heads/master' && 'nightly' || 'latest') }}
 
       - name: Push Image (alpine)
         uses: docker/build-push-action@v6
@@ -105,13 +96,11 @@ jobs:
           context: .
           file: ${{ env.DOCKERFILE_ALPINE }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
-          push: ${{ (github.event_name != 'pull_request' &&
-                     github.actor != 'dependabot[bot]') ||
-                     startsWith(github.ref, 'lychee-v') }}
+          push: ${{ (github.event_name != 'pull_request' && github.actor != 'dependabot[bot]) || startsWith(github.ref, 'refs/tags/') }}
           tags: ${{ steps.meta-alpine.outputs.tags }}
           labels: ${{ steps.meta-alpine.outputs.labels }}
           build-args: |
-            "LYCHEE_VERSION=${{ github.ref == 'refs/heads/master' && 'nightly' || 'latest' }}"
+            LYCHEE_VERSION=${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || (github.ref == 'refs/heads/master' && 'nightly' || 'latest') }}
 
       - name: Update DockerHub description
         uses: peter-evans/dockerhub-description@v4
